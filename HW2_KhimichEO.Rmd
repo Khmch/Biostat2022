@@ -1,0 +1,306 @@
+---
+title: "Домашняя работа №1"
+author: "Екатерина Химич"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+&nbsp;
+
+#### **Задание 1.** Загрузите датасет insurance_cost.csv
+
+```{r}
+library(readr)
+inc <- read_csv("C:/R/insurance_cost.csv")
+
+head(inc)
+
+#summary(inc)
+#skim(inc)
+```
+&nbsp;
+
+#### **Задание 2.** Выведите гистограммы всех нумерических переменных
+
+```{r}
+library(ggplot2)
+
+ggplot() +
+  geom_histogram(data = inc,
+                 aes(x = age), 
+                 bins = 30) +
+  theme_minimal()
+
+ggplot() +
+  geom_histogram(data = inc,
+                 aes(x = bmi), 
+                 bins = 30) +
+  theme_minimal()
+
+ggplot() +
+  geom_histogram(data = inc,
+                 aes(x = children),
+                 bins = 6) +
+  theme_minimal()
+
+ggplot() +
+  geom_histogram(data = inc,
+                 aes(x = charges), 
+                 bins = 30) +
+  theme_minimal()
+```
+
+&nbsp;
+
+#### **Задание 3.** Нарисуйте график плотности по колонке charges. Отметьте вертикальные линии  средней и медианы на графике. Раскрасьте текст и линии средней и медианы разными цветами. Добавьте текстовые пояснения значения средней и медианы. Подберите тему для графика. Назовите оси. 
+
+```{r}
+#Среднее значение
+charges_mean <- round(mean(inc$charges),1)
+
+#Медиана
+charges_med <- round(median(inc$charges),1)
+
+#Построение графика
+ggplot(data = inc) +
+      geom_density(aes(x = charges)) +
+      geom_vline(aes(xintercept = charges_mean), color = "violet") +
+          annotate("text",
+                   x= charges_mean + 7000,
+                   y= 0.00005,
+                   label = paste0 ("mean = ",charges_mean), color = "violet") +
+        geom_vline(aes(xintercept = charges_med), color = "pink") +
+          annotate("text",
+                   x= charges_med - 5000,
+                   y= 0.000063,
+                   label = paste0 ("mean = ",charges_med), color = "pink") +
+      theme_bw() +
+  labs (y = 'Плотность', x = 'Выплаты')
+```
+
+&nbsp;
+
+#### **Задание 4.** Сделайте три box_plot по отношению переменных charges и (1) sex (2) smoker (3)  region. Подберите тему для графика. Назовите оси
+
+```{r}
+ggplot(data = inc) +
+      geom_boxplot(aes(x = charges, y = sex)) +
+      theme_bw() +
+  labs (x = 'Выплаты', y = 'Пол') +
+  coord_flip()
+
+ggplot(data = inc) +
+      geom_boxplot(aes(x = charges, y = smoker)) +
+      theme_bw() +
+  labs (x = 'Выплаты', y = 'Курение') +
+  coord_flip()
+
+ggplot(data = inc) +
+      geom_boxplot(aes(x = charges, y = region)) +
+      theme_bw() +
+  labs (x = 'Выплаты', y = 'Регион проживания') +
+  coord_flip()
+```
+
+&nbsp;
+
+#### **Задание 5.** Объедините графики из заданий 3 и 4 в один так, чтобы сверху шёл один график из задания 3, а под ним 3 графика из задания 4. Сделайте общее название для графика.
+
+```{r}
+library(ggpubr)
+
+#Присваивание переменных для упрощения работы
+a <- ggplot(data = inc) +
+      geom_density(aes(x = charges)) +
+      geom_vline(aes(xintercept = charges_mean), color = "violet") +
+          annotate("text",
+                   x= charges_mean + 7000,
+                   y= 0.00005,
+                   label = paste0 ("mean = ",charges_mean), color = "violet") +
+        geom_vline(aes(xintercept = charges_med), color = "pink") +
+          annotate("text",
+                   x= charges_med - 5000,
+                   y= 0.000063,
+                   label = paste0 ("mean = ",charges_med), color = "pink") +
+      theme_bw() +
+  labs (y = 'Плотность', x = 'Выплаты')
+
+b <- ggplot(data = inc) +
+      geom_boxplot(aes(x = charges, y = sex)) +
+      theme_bw() +
+  labs (x = 'Выплаты', y = 'Пол') +
+  coord_flip()
+
+c <- ggplot(data = inc) +
+      geom_boxplot(aes(x = charges, y = smoker)) +
+      theme_bw() +
+  labs (x = 'Выплаты', y = 'Курение') +
+  coord_flip()
+
+d <- ggplot(data = inc) +
+      geom_boxplot(aes(x = charges, y = region)) +
+      theme_bw() +
+  labs (x = 'Выплаты', y = 'Регион проживания') +
+  coord_flip()
+
+#Объединение ящиков
+abc <- ggarrange(b, c, d + rremove("x.text"),
+          ncol = 3, nrow = 1)
+
+#Сборка
+ggarrange(a, abc + rremove("x.text"),
+          ncol = 1, nrow = 2)
+```
+
+&nbsp;
+
+#### **Задание 6.** Сделайте фасет графика из задания 3 по колонке region.
+
+```{r}
+ggplot(data = inc) +
+      geom_density(aes(x = charges)) +
+        facet_grid(. ~region) + 
+      theme_bw() +
+  labs (y = 'Плотность', x = 'Выплаты')
+```
+
+&nbsp;
+
+#### **Задание 7.** Постройте scatter plot отношения переменных age и charges. Добавьте названия  осей, название графика и тему. Сделайте так, чтобы числа по оси Х отображались  14 шрифтом.
+
+```{r}
+ggplot(data = inc) +
+      geom_point(aes(x = age,
+                     y = charges)) +
+      theme_classic2() + 
+      theme(axis.text.x = element_text(size = 14),
+            plot.title = element_text(size = 18, hjust = 0.5)) +
+   labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
+```
+
+&nbsp;
+
+#### **Задание 8.** Проведите линию тренда для предыдущего графика.
+
+```{r}
+ggplot(data = inc, aes(x = age,
+                     y = charges)) +
+      geom_point() +
+      geom_smooth(method = lm, 
+                  color = 'blue',
+                  fillrange = T,
+                  fill = 'green',
+                  se = TRUE) +
+      theme_classic2() + 
+      theme(axis.text.x = element_text(size = 14),
+            plot.title = element_text(size = 18, hjust = 0.5)) +
+   labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
+```
+
+&nbsp;
+
+#### **Задание 9.** Сделайте разбивку предыдущего графика по колонке smokers (у вас должно  получится две линии тренда для курящих и нет).
+
+```{r}
+#1 вариант
+ggplot(data = inc, aes(x = age,
+                     y = charges,
+                     color = smoker,
+                     fill = smoker,
+                     group = smoker)) +
+      geom_point() +
+      geom_smooth(method = lm, 
+                  se = TRUE) +
+      theme_classic2() + 
+      theme(axis.text.x = element_text(size = 14),
+            plot.title = element_text(size = 18, hjust = 0.5)) +
+   labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
+
+#2 вариант
+ggplot(data = inc, aes(x = age,
+                     y = charges)) + 
+facet_grid(. ~smoker) +
+      geom_point() +
+      geom_smooth(method = lm, 
+                  color = 'blue',
+                  fill = 'green',
+                  se = TRUE) +
+      theme_classic2() + 
+      theme(axis.text.x = element_text(size = 14),
+            plot.title = element_text(size = 18, hjust = 0.5)) +
+   labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
+```
+
+&nbsp;
+
+#### **Задание 10.** Сделайте график из заданий 7-9, но вместо переменной age используйте  переменную bmi. 
+
+```{r}
+#1 вариант
+ggplot(data = inc, aes(x = bmi,
+                     y = charges,
+                     color = smoker,
+                     fill = smoker,
+                     group = smoker)) +
+      geom_point() +
+      geom_smooth(method = lm, 
+                  color = 'blue',
+                  fill = 'green',
+                  se = TRUE) +
+      theme_classic2() + 
+      theme(axis.text.x = element_text(size = 14),
+            plot.title = element_text(size = 18, hjust = 0.5)) +
+   labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
+
+#2 вариант
+ggplot(data = inc, aes(x = bmi,
+                     y = charges)) + 
+facet_grid(. ~smoker) +
+      geom_point() +
+      geom_smooth(method = lm, 
+                  color = 'blue',
+                  fill = 'green',
+                  se = TRUE) +
+      theme_classic2() + 
+      theme(axis.text.x = element_text(size = 14),
+            plot.title = element_text(size = 18, hjust = 0.5)) +
+   labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
+```
+
+&nbsp;
+
+#### **Задание 11.** Задайте вопрос к данным №1 (вопрос должен быть про какую-то подвыборку  данных). Ответьте на него построив график на подвыборке данных. График должен  содержать все основные элементы оформления (название, подписи осей, тему и  проч.). Аргументируйте выбор типа графика. 
+
+```{r}
+
+```
+
+&nbsp;
+
+#### **Задание 12.** Задайте вопрос к данным №2 (вопрос должен быть про какую-то подвыборку  данных). Ответьте на него построив график на подвыборке данных. График должен  содержать все основные элементы оформления (название, подписи осей, тему и  проч.). Аргументируйте выбор типа графика. 
+
+
+```{r}
+
+```
+
+&nbsp;
+
+#### **Задание 13.** Задайте вопрос к данным №3 (вопрос должен быть про какую-то подвыборку  данных). Ответьте на него построив график на подвыборке данных. График должен  содержать все основные элементы оформления (название, подписи осей, тему и  проч.). Аргументируйте выбор типа графика. 
+
+
+```{r}
+
+```
+
+&nbsp;
+
+#### **Задание 14.** бб
+
+```{r}
+
+```
