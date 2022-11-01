@@ -2,6 +2,7 @@
 title: "Домашняя работа №1"
 author: "Екатерина Химич"
 output: html_document
+
 ---
 
 ```{r setup, include=FALSE}
@@ -14,9 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(readr)
+read_csv("C:/R/insurance_cost.csv")
 inc <- read_csv("C:/R/insurance_cost.csv")
-
-head(inc)
 
 #summary(inc)
 #skim(inc)
@@ -175,7 +175,7 @@ ggplot(data = inc) +
 ggplot(data = inc) +
       geom_point(aes(x = age,
                      y = charges)) +
-      theme_classic2() + 
+      theme_classic() + 
       theme(axis.text.x = element_text(size = 14),
             plot.title = element_text(size = 18, hjust = 0.5)) +
    labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
@@ -194,7 +194,7 @@ ggplot(data = inc, aes(x = age,
                   fillrange = T,
                   fill = 'green',
                   se = TRUE) +
-      theme_classic2() + 
+      theme_classic() + 
       theme(axis.text.x = element_text(size = 14),
             plot.title = element_text(size = 18, hjust = 0.5)) +
    labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
@@ -214,7 +214,7 @@ ggplot(data = inc, aes(x = age,
       geom_point() +
       geom_smooth(method = lm, 
                   se = TRUE) +
-      theme_classic2() + 
+      theme_classic() + 
       theme(axis.text.x = element_text(size = 14),
             plot.title = element_text(size = 18, hjust = 0.5)) +
    labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
@@ -228,7 +228,7 @@ facet_grid(. ~smoker) +
                   color = 'blue',
                   fill = 'green',
                   se = TRUE) +
-      theme_classic2() + 
+      theme_classic() + 
       theme(axis.text.x = element_text(size = 14),
             plot.title = element_text(size = 18, hjust = 0.5)) +
    labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
@@ -250,7 +250,7 @@ ggplot(data = inc, aes(x = bmi,
                   color = 'blue',
                   fill = 'green',
                   se = TRUE) +
-      theme_classic2() + 
+      theme_classic() + 
       theme(axis.text.x = element_text(size = 14),
             plot.title = element_text(size = 18, hjust = 0.5)) +
    labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
@@ -264,7 +264,7 @@ facet_grid(. ~smoker) +
                   color = 'blue',
                   fill = 'green',
                   se = TRUE) +
-      theme_classic2() + 
+      theme_classic() + 
       theme(axis.text.x = element_text(size = 14),
             plot.title = element_text(size = 18, hjust = 0.5)) +
    labs (x = 'Возраст', y = 'Выплаты', title = 'Scatter plot')
@@ -275,7 +275,18 @@ facet_grid(. ~smoker) +
 #### **Задание 11.** Задайте вопрос к данным №1 (вопрос должен быть про какую-то подвыборку  данных). Ответьте на него построив график на подвыборке данных. График должен  содержать все основные элементы оформления (название, подписи осей, тему и  проч.). Аргументируйте выбор типа графика. 
 
 ```{r}
+#Меняется ли индекс массы тела от пола у молодых людей (до 30 лет)?
 
+inc1 <- inc[inc$age < 30, ]
+
+ggplot(data = inc1) +
+      geom_boxplot(aes(x = bmi, y = sex)) +
+      theme_light() +
+      theme(plot.title = element_text(hjust = 0.5)) + 
+  labs (x = 'ИМТ', y = 'Пол', title = 'Сравнение ИМТ у молодых людей в зависимости от пола') +
+  coord_flip()
+
+#Медианы практически на одном уровне, верхний и нижний квартили у мужчин чуть выше, чем у женщин, так же у мужчин больше выбросов с большим ИМТ. Тип графика показывает медианы. квартили, экстремумы значений, что позволяет оценить различия
 ```
 
 &nbsp;
@@ -284,7 +295,20 @@ facet_grid(. ~smoker) +
 
 
 ```{r}
+#Найти регион с наибольшим процентом курящих мужчин
 
+inc2 <- inc[inc$sex == 'male', ]
+
+ggplot(data = inc2) +
+  geom_bar(aes(x = region, fill = smoker), position = "fill") +
+  theme_light() +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(title = "Распределение курящих мужчин по регионам",
+       x = "Регионы",
+       y = "Количество мужчин") +
+  scale_y_continuous(labels = scales::percent)
+  
+#В регионе Southeast наибольший процент курящих мужчин. Данный график показывает сравнение именно по процентам, а не по количеству человек
 ```
 
 &nbsp;
@@ -293,7 +317,20 @@ facet_grid(. ~smoker) +
 
 
 ```{r}
+#Как распределяются выплаты у мужчин и женщин в зависимости от ИМТ и есть ли влияние количества детей
 
+ggplot(data = inc) +
+  geom_point(aes(x = bmi, 
+                 y = charges, 
+                 colour = sex), alpha = 0.5) +
+  facet_wrap(~children) +
+  theme_light() +
+  theme(plot.title = element_text(hjust = 0.5, size = 10)) + 
+  labs(title = "Выплаты у мужчин и женщин с разным количеством детей в зависимости от ИМТ",
+       x = "ИМТ",
+       y = "Сумма выплаты")
+  
+#
 ```
 
 &nbsp;
@@ -301,5 +338,24 @@ facet_grid(. ~smoker) +
 #### **Задание 14.** Приблизительно повторите график
 
 ```{r}
+library(dplyr)
+inc_n <- inc %>% 
+  mutate(
+    age_group = case_when(
+age < 35 ~ "age: 21-34",
+age >= 35 & age < 50 ~ "age: 35-49",
+age >= 50 ~ "age: 50+")) %>% 
+  mutate(log_ch = log(charges))
 
+ggplot(data = inc_n) +
+  geom_point(colour = "#4f0070", alpha = 0.2, aes(x = bmi, y = log_ch)) +
+  geom_smooth(aes(x = bmi, y = log_ch), method = lm, color = 'red', fill = 'grey', se = TRUE) + 
+  facet_wrap(~age_group) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "plain")) + 
+  labs(title = "Отношение индекса массы тела к логарифму трат по возрастным группам",
+       x = "bmi",
+       y = "log(charges)") +
+  
+  theme(legend.position = "bottom")
 ```
