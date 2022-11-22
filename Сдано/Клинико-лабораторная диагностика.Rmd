@@ -1,0 +1,111 @@
+---
+title: "Homework_corr"
+author: "Ekaterina Khimich"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(pROC)
+library(gtsummary)
+
+```
+
+&nbsp;
+
+#### **Задание 1.** У какого количества пациентов из датасета присутствует нарушенная толерантность к глюкозе (НТГ)? Критерий НТГ – это уровень повышение гликемии ≥ 7.8 ммоль/л на 120 минуте теста на толерантность к глюкозе. Сколько в датасете пациентов, у которых нет НТГ?
+
+```{r}
+
+library(readr)
+diabetes <- read_csv("C:/R/diabetes.csv")
+
+diabetes %>% glimpse()
+
+is.na(diabetes$Glucose) <- diabetes$Glucose == 0
+is.na(diabetes$BloodPressure) <- diabetes$BloodPressure == 0
+is.na(diabetes$SkinThickness) <- diabetes$SkinThickness == 0
+is.na(diabetes$Insulin) <- diabetes$Insulin == 0
+is.na(diabetes$BMI) <- diabetes$BMI == 0
+
+diabetes$glycemia <- diabetes$Glucose/18
+```
+
+Количество пациентов с нарушенной толерантностью к глюкозе
+```{r}
+sum(diabetes$glycemia >= 7.8, na.rm = TRUE)
+```
+
+Количество пациентов, у которых нет НТГ
+```{r}
+sum(is.na(diabetes$glycemia))
+```
+
+&nbsp;
+
+#### **Задание 2.** Как выглядит ROC-кривая для предсказания сахарного диабета по переменной, характеризующей уровень гликемии? Постройте график.
+
+```{r}
+diabetes %>% 
+    tbl_summary(by = Outcome) %>% 
+    add_p()
+
+roc_curve_1 <- roc(Outcome ~ glycemia, data = diabetes)
+
+ggroc(roc_curve_1) + 
+    theme_bw()
+```
+
+&nbsp;
+
+#### **Задание 3.** Чему равна площадь под ROC-кривой, которую вы построили в вопросе 2?
+
+```{r}
+auc(roc_curve_1)
+```
+
+&nbsp;
+
+#### **Задание 4.** Чему равен 95% двусторонний ДИ для площади под ROC-кривой, которую вы построили в вопросе 2?
+
+```{r}
+ci(roc(Outcome ~ glycemia, data = diabetes, ci = T))
+```
+
+&nbsp;
+
+#### **Задание 5.** Постройте ROC-кривую и определите, какое пороговое значение является оптимальным для предсказания сахарного диабета по уровню инсулина? Какой чувствительностью и специфичностью обладает данный порог?
+
+```{r}
+roc_curve_3 <- roc(Outcome ~ Insulin, data = diabetes, ci = T)
+
+ggroc(roc_curve_3) + 
+    theme_bw()
+
+roc_curve_3 %>% 
+  coords(x = "best", best.method = "closest.topleft")
+```
+Оптимальное пороговое значение = 121
+Специфичность = 0.6212121
+Чувствительность = 0.7846154
+
+&nbsp;
+
+#### **Задание 6.** Какая из количественных переменных в датасете обладает наибольшей площадью под ROC-кривой? Как вы можете интерпретировать это знание? Какая количественная переменная имеет наименьшую площадь?
+
+```{r}
+diabetes %>% 
+    pivot_longer(cols = !Outcome) %>% 
+    group_by(name) %>% 
+    summarise(AUC = roc(Outcome, value, ci = T)$ci[2] %>% round(3),
+              AUC_LCL = roc(Outcome, value, ci = T)$ci[1] %>% round(3),
+              AUC_UCL = roc(Outcome, value, ci = T)$ci[3] %>% round(3))
+```
+
+Наибольшая площадь ROC-кривой у переменной Glucose, наименьший - DiabetesPedigreeFunction. Чем больше площадь под ROC-кривой, тем более информативен для нас показатель и он обладает хорошими диагностическими характеристиками

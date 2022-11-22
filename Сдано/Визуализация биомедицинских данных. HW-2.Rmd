@@ -1,0 +1,313 @@
+---
+title: "Домашняя работа №2"
+author: "Екатерина Химич"
+output: html_document 
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+&nbsp;
+
+#### **Задание 1.** Загрузите датасет insurance_cost.csv
+
+```{r}
+library(readr)
+inc <- read_csv("C:/R/insurance_cost.csv")
+
+head(inc)
+
+#summary(inc)
+#skim(inc)
+```
+&nbsp;
+
+#### **Задание 2.** Сделайте интерактивный plotly график отношения индекса массы тела и трат на страховку. Раскрасьте его по колонке smoker
+
+```{r}
+library(plotly)
+plot_ly(data = inc,
+        x = ~ bmi,
+        y = ~ charges,
+        color = ~smoker)
+```
+
+&nbsp;
+
+#### **Задание 3.** Сделайте тоже самое через ggplotly
+
+```{r}
+plot <- inc %>% 
+  ggplot(aes(x = bmi, 
+             y = charges,
+             color = smoker)) + 
+  geom_point(size = 1) +
+  theme_minimal()
+
+ggplotly(plot)
+```
+
+&nbsp;
+
+#### **Задание 4.** Кратко сделайте корреляционный анализ данных insurance_cost. Посмотрите  документацию пакетов, которые мы проходили на занятии и, исходя из этого, постройте минимум два новых типа графика (которые мы не строили на занятии)
+
+```{r}
+library(corrplot)
+
+inc_clear <- inc %>% 
+  select(is.integer | is.numeric)
+
+inc_cor <- cor(inc_clear)
+
+corrplot(inc_cor, method = 'circle')
+
+corrplot(inc_cor, method = 'ellipse')
+```
+
+&nbsp;
+
+#### **Задание 5.** Превратите все номинативные переменные в бинарные/дамми. Т.е. sex и smoker должны стать бинарными (1/0), а каждое уникальное значение region – отдельной  колонкой, где 1 говорит о наличии этого признака для наблюдения, а 0 – об отсутствии. Создайте новый датафрейм, где вы оставите только нумерические  переменные.
+
+```{r}
+inc_new <- inc %>%
+  mutate(region_n = factor(region, labels = c("1","2","3","4"))) 
+
+inc_new$sex <- ifelse(inc_new$sex == "female", 1, 0)
+inc_new$smoker <- ifelse(inc_new$smoker == "yes", 1, 0)
+
+inc_new$region_n <- as.numeric(inc_new$region_n)
+inc_new$number <-  c(1:1338)
+
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(tidyr)
+
+inc_wider <- inc_new %>% 
+    arrange(number) %>% 
+    mutate(id = rowid(number)) %>%
+    pivot_wider(names_from = region, values_from = region_n) %>% 
+    select(-id)
+
+inc_wider$number <- NULL
+
+inc_wider <- as.data.frame(inc_wider)
+
+inc_wider$southwest <- as.numeric(unlist(inc_wider$southwest))
+inc_wider$southeast <- as.numeric(unlist(inc_wider$southeast))
+inc_wider$northwest <- as.numeric(unlist(inc_wider$northwest))
+inc_wider$northeast <- as.numeric(unlist(inc_wider$northeast))
+
+inc_wider[is.na(inc_wider)] <- 0
+
+inc_wider <- inc_wider %>% 
+  mutate(across(ends_with("st"), ~ ifelse(.>0,1,0))) 
+
+head(inc_wider)
+```
+
+&nbsp;
+
+#### **Задание 6.** Постройте иерархическую кластеризацию на этом датафрейме
+
+```{r}
+library(factoextra)
+
+inc_clear_dist <- dist(inc_wider, method = "euclidean")
+as.matrix(inc_clear_dist)[1:6,1:6]
+
+inc_clear_hc <- hclust(d = inc_clear_dist, 
+                        method = "ward.D2")
+
+fviz_dend(inc_clear_hc, 
+          cex = 0.1)
+```
+
+&nbsp;
+
+#### **Задание 7.** Используя документацию или предложенный  учебник сделайте ещё несколько возможных графиков по иерархической  кластеризации. Попробуйте раскрасить кластеры разными цветами
+
+```{r}
+#Comparing dendrograms
+
+library(dendextend)
+
+res.dist <- dist(inc_wider, method = "euclidean")
+
+hc1 <- hclust(res.dist, method = "average")
+hc2 <- hclust(res.dist, method = "ward.D2")
+
+dend1 <- as.dendrogram (hc1)
+dend2 <- as.dendrogram (hc2)
+
+dend_list <- dendlist(dend1, dend2)
+
+tanglegram(dend1, dend2)
+
+```
+```{r}
+#circular dendrogram
+
+library(factoextra)
+
+inc_clear_dist <- dist(inc_wider, method = "euclidean")
+as.matrix(inc_clear_dist)[1:6,1:6]
+
+inc_clear_hc <- hclust(d = inc_clear_dist, 
+                        method = "ward.D2")
+
+fviz_dend(inc_clear_hc, cex = 0.5, k = 4, k_colors = "jco", type = "circular")
+
+```
+
+```{r}
+
+#phylogenic trees
+
+library("igraph")
+
+fviz_dend(inc_clear_hc, k = 4, k_colors = "jco",
+type = "phylogenic", repel = TRUE)
+
+```
+
+
+&nbsp;
+
+#### **Задание 8.** Сделайте одновременный график heatmap и иерархической кластеризации 
+
+```{r}
+library(pheatmap)
+
+inc_clear_scaled <- scale(inc_clear)
+pheatmap(inc_clear_scaled)
+
+```
+
+&nbsp;
+
+#### **Задание 9.** Проведите анализ данных полученных в задании 5 методом PCA. Кратко  проинтерпретируйте полученные результаты.
+
+```{r}
+inc_pca <- inc_wider %>% 
+  select(age, bmi)
+
+ggplot() +
+  geom_point(data = inc_pca, aes(x = age, y = bmi)) +
+  theme_minimal()
+
+inc_pca <- inc_pca %>% 
+  mutate(pc1 = age + bmi)
+
+inc_pca <- inc_pca %>% 
+  mutate(pc1_decile = ntile(pc1, 10))
+
+inc_pca <- inc_pca %>% 
+  mutate(pc1_decile_ch = case_when(
+    pc1_decile == 1 ~ "1",
+    (pc1_decile == 5) | (pc1_decile == 6) ~ "5-6",
+    pc1_decile == 10 ~ "10"
+  ))
+inc_pca
+
+ggplot() +
+  geom_point(data = inc_pca, 
+             aes(x = age, 
+                 y = bmi, 
+                 color = pc1_decile_ch)) +
+  theme_minimal()
+
+inc_pca <- inc_pca %>% 
+  mutate(pc2 = age - bmi) %>%
+  mutate(pc2_decile = ntile(pc2, 10)) %>%
+    mutate(pc2_decile_ch = case_when( 
+    pc2_decile == 1 ~ "1",
+    (pc2_decile == 5) | (pc2_decile == 6) ~ "5-6",
+    pc2_decile == 10 ~ "10"
+  ))
+
+ggplot() +
+  geom_point(data = inc_pca, 
+             aes(x = age, 
+                 y = bmi, 
+                 color = pc2_decile_ch)) +
+  theme_minimal()
+
+inc_pca_pc1 <- inc_pca %>%
+  group_by(pc1_decile) %>% 
+  summarise(age_pc1 = mean(age),
+            bmi_pc1 = mean(bmi))
+
+inc_pca_pc2 <- inc_pca %>%
+  group_by(pc2_decile) %>%
+  summarise(age_pc2 = mean(age),
+            bmi_pc2 = mean(bmi))
+
+inc_pca_ggplot <- ggplot() +
+  geom_point(data = inc_pca,
+             aes(x = age, y = bmi)) + 
+  geom_smooth(data = inc_pca_pc1,
+              aes(x = age_pc1, y = bmi_pc1),
+              method=lm,
+              color="Blue", fullrange = F,
+              size = 2
+              ) +
+  geom_smooth(data = inc_pca_pc2, 
+              aes(x = age_pc2, y = bmi_pc2),
+              method=lm, 
+              orientation = "y", 
+              color="Green", fullrange = F,
+              size = 2
+              ) +
+  theme_minimal()
+
+inc_pca_ggplot
+
+ggplot() +
+  geom_point(data = inc_pca, aes(x = pc1, y = pc2)) +
+  theme_minimal() 
+
+inc_pca <- inc_pca %>% 
+  select(age, bmi)
+
+inc.pca <- prcomp(inc_pca, 
+                scale = T)
+
+inc.pca$rotation
+
+data <- as.data.frame(inc.pca$x)
+
+ggplot() +
+  geom_point(data = data, 
+             aes(x = PC1, y = PC2)) +
+  theme_minimal() 
+
+```
+
+&nbsp;
+
+#### **Задание 10.** В финале вы получите график PCA по наблюдениям и переменным. Сделайте  кластеризацию данных на нём по возрастным группам (создайте их сами на ваш  вкус, но их количество должно быть не меньше 3)
+
+```{r}
+inc_pca_ggplot
+```
+
+&nbsp;
+
+#### **Задание 11.** Подумайте и создайте ещё две номинативные  переменные, которые бы гипотетически могли хорошо разбить данные на  кластеры. Сделайте две соответствующие визуализации.
+
+```{r}
+
+```
+
+&nbsp;
+
+#### **Задание 12.** Давайте самостоятельно увидим, что снижение  размерности – это группа методов, славящаяся своей неустойчивостью.  Попробуйте самостоятельно поизменять дафрейм – удалить какие-либо  переменные или создать их (создавайте только дамми переменные). Ваша задача – резко поднять качество вашего анализа PCA (при этом, фактически, оперируя всё  теми же данными). Кратко опишите, почему добавление той или иной дамми переменной так улучшает PCA. 
+
+
+```{r}
+
+```
+
