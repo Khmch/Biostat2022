@@ -1,0 +1,60 @@
+---
+title: "Введение в автоматизацию обработки данных на R, домашняя работа от 02.11.2022"
+author: "Ekaterina Khimich"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(tidyr)
+library(readxl)
+library(tibble)
+library(stringr)
+```
+&nbsp;
+
+```{r}
+data <- read_xlsx("C:/R/data_excel.xlsx", na = "NA")
+
+data_new <- data %>% 
+  mutate(across(ends_with("1") | ends_with("2"), .fns = ~str_replace(., ",", "."))) %>% 
+  mutate(across(ends_with("1") | ends_with("2"), .fns = ~as.numeric(.)))
+
+data_new
+```
+
+```{r}
+data_long <- pivot_longer(data_new, cols = 'Базофилы_E1':'Эритроциты_E2', names_to = "Analyzes")
+
+data_long
+```
+&nbsp;
+```{r}
+visit <- str_split_fixed(data_long$Analyzes, '_', 2)
+data_long <- bind_cols(data_long, visit) %>% 
+  rename(type = ...8, visit = ...9) 
+```
+&nbsp;
+```{r}
+data_summarize <- data_long %>% 
+  group_by (Группа, visit, type) %>% 
+  summarize(mean(value), sd(value), n(), median(value))
+
+data_summarize
+```
+&nbsp;
+Статистики по группе 1
+```{r}
+knitr::kable(data_summarize %>% filter(Группа == 'Группа 1'))
+```
+&nbsp;
+Статистики по группе 2
+```{r}
+# Статистики по группе 2
+knitr::kable(data_summarize %>% filter(Группа == 'Группа 2'))
+```
